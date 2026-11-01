@@ -60,8 +60,8 @@ modules when it runs, since they need servers.
 ## CI
 
 `.github/workflows/check.yml` runs on every pull request and every push to
-main, on x86_64-linux and aarch64-linux. The `flake-check` job runs
-`nix flake check`. The `conformance-relock`, `conformance-rebuild`,
+main, on x86_64-linux, aarch64-linux and aarch64-darwin. The `flake-check`
+job runs `nix flake check`. The `conformance-relock`, `conformance-rebuild`,
 `conformance-offline` and `conformance-update` jobs run the conformance
 checks of the purifier contract that need the network or the Nix daemon.
 The `outside-the-sandbox` job runs `tests/negative.sh`,
