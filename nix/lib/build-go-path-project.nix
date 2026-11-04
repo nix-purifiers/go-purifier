@@ -94,10 +94,15 @@ let
       chmod -R u+w "$GOPATH"
       cd "$GOPATH/src/"${lib.escapeShellArg layout.importPath}
       go version > "$TMPDIR/target-go-version"
-      go test ./...
+      # Modern Go embeds absolute build paths unless asked to trim them.
+      # Original Go has no such flag, so query the selected native SDK.
+      buildFlags=()
+      help=$(go help build)
+      case "$help" in *-trimpath*) buildFlags+=(-trimpath) ;; esac
+      go test "''${buildFlags[@]}" ./...
       mkdir -p "$TMPDIR/bin"
       ${lib.concatMapStrings (binary: ''
-        go build -o "$TMPDIR/bin/"${lib.escapeShellArg binary.name} ${lib.escapeShellArg binary.package}
+        go build "''${buildFlags[@]}" -o "$TMPDIR/bin/"${lib.escapeShellArg binary.name} ${lib.escapeShellArg binary.package}
       '') lock.binaries}
       runHook postBuild
     '';
