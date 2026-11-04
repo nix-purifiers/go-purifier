@@ -38,6 +38,10 @@ let
         ".zip"
       ]
   ) lock.vcsModules;
+  infos = import ./proxy-info.nix { inherit lib; } (
+    map (entry: entry.path) entries
+    ++ map (m: "${lock.proxyDir m.module}/${m.version}.mod") lock.vcsModules
+  );
 in
 # The manifest goes to the builder as a file, since a module with many
 # dependencies locks thousands of files and the list would not fit in an
@@ -47,7 +51,13 @@ runCommand "go-module-proxy"
     manifest =
       lib.concatMapStrings (a: "${a.path}\t${fetch a}\n") (builtins.filter (a: a ? url) entries)
       + vcsLines;
-    passAsFile = [ "manifest" ];
+    infos = lib.concatMapStrings (path: "${path}\t${builtins.toJSON infos.${path}}\n") (
+      builtins.attrNames infos
+    );
+    passAsFile = [
+      "manifest"
+      "infos"
+    ];
     preferLocalBuild = true;
     allowSubstitutes = false;
     passthru = { inherit lock; };
@@ -58,4 +68,8 @@ runCommand "go-module-proxy"
       mkdir -p "$out/$(dirname "$rel")"
       ln -s "$target" "$out/$rel"
     done < "$manifestPath"
+    while IFS=$'\t' read -r rel metadata; do
+      mkdir -p "$out/$(dirname "$rel")"
+      printf '%s\n' "$metadata" > "$out/$rel"
+    done < "$infosPath"
   ''

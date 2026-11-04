@@ -106,6 +106,20 @@ let
       '';
 in
 {
+  proxy-version-metadata =
+    let
+      infos = import ../nix/lib/proxy-info.nix { inherit lib; } [
+        "example.com/lib/@v/v1.0.0.mod"
+        "example.com/lib/@v/v1.2.0-!r!c1.mod"
+        "example.com/lib/@v/v1.0.0.zip"
+        "unrelated.mod"
+      ];
+    in
+    assert builtins.length (builtins.attrNames infos) == 2;
+    assert infos."example.com/lib/@v/v1.2.0-!r!c1.info".Version == "v1.2.0-RC1";
+    assert builtins.attrNames infos."example.com/lib/@v/v1.0.0.info" == [ "Version" ];
+    runCommand "proxy-version-metadata" { } "touch $out";
+
   # A lockfile older than go.mod fails at evaluation, naming
   # `go-purifier lock`.
   conformance-stale =

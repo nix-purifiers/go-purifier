@@ -64,6 +64,17 @@ jobs:
         run: nix build .#toolchain --out-link toolchain
       - name: Compose independent Go projects
         run: python3 tests/composition-native.py toolchain
+      - name: Exercise MVS and ordinary publisher sandwiches
+        run: python3 -B tests/composition-graphs.py toolchain --state-root .composition-graphs
+      - name: Retain graph observations and unresolved format constraints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-graphs-${{ matrix.runner }}
+          include-hidden-files: true
+          path: |
+            .composition-graphs/report.json
+            .composition-graphs/commands.log
 
   conformance-relock:
     strategy:

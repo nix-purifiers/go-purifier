@@ -4,6 +4,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -229,6 +230,9 @@ func TestLinkTree(t *testing.T) {
 	out := filepath.Join(dir, "out")
 	t.Setenv("out", out)
 	t.Setenv("manifestPath", manifest)
+	infos := filepath.Join(dir, "infos")
+	writeFiles(t, dir, map[string]string{"infos": "b/c/@v/v2.0.0.info\t{\"Version\":\"v2.0.0\"}\n"})
+	t.Setenv("infosPath", infos)
 	if err := linkTreeCommand(); err != nil {
 		t.Fatal(err)
 	}
@@ -237,5 +241,16 @@ func TestLinkTree(t *testing.T) {
 		if err != nil || got != target {
 			t.Errorf("link %s = %q, %v; want %q", link, got, err, target)
 		}
+	}
+	payload, err := os.ReadFile(filepath.Join(out, "b/c/@v/v2.0.0.info"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var metadata map[string]any
+	if err := json.Unmarshal(payload, &metadata); err != nil {
+		t.Fatal(err)
+	}
+	if metadata["Version"] != "v2.0.0" || metadata["Time"] != nil {
+		t.Fatalf("version metadata must not invent an upstream timestamp: %s", payload)
 	}
 }

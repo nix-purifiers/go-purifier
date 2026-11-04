@@ -412,7 +412,32 @@ func linkTreeCommand() error {
 			return err
 		}
 	}
-	return scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+	if infos := os.Getenv("infosPath"); infos != "" {
+		metadata, err := os.Open(infos)
+		if err != nil {
+			return err
+		}
+		defer metadata.Close()
+		scanner := bufio.NewScanner(metadata)
+		for scanner.Scan() {
+			rel, data, ok := strings.Cut(scanner.Text(), "\t")
+			if !ok {
+				return fmt.Errorf("invalid proxy metadata manifest line")
+			}
+			target := filepath.Join(out, filepath.FromSlash(rel))
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return err
+			}
+			if err := os.WriteFile(target, []byte(data+"\n"), 0o644); err != nil {
+				return err
+			}
+		}
+		return scanner.Err()
+	}
+	return nil
 }
 
 func run(name string, args ...string) error {

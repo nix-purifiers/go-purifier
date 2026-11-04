@@ -65,6 +65,10 @@ let
       ]
     )
   ) lock.vcsModules;
+  infos = import (libDir + "/proxy-info.nix") { lib = import (nixpkgs + "/lib"); } (
+    map (entry: entry.path) lock.files
+    ++ map (m: "${lock.proxyDir m.module}/${m.version}.mod") lock.vcsModules
+  );
 in
 derivation {
   name = "go-purifier-proxy";
@@ -72,7 +76,13 @@ derivation {
   builder = cli';
   args = [ "link-tree" ];
   manifest = builtins.concatStringsSep "" (fileLines ++ vcsLines);
-  passAsFile = [ "manifest" ];
+  infos = builtins.concatStringsSep "" (
+    map (path: "${path}\t${builtins.toJSON infos.${path}}\n") (builtins.attrNames infos)
+  );
+  passAsFile = [
+    "manifest"
+    "infos"
+  ];
   preferLocalBuild = true;
   allowSubstitutes = false;
 }

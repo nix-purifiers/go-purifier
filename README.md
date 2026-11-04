@@ -34,6 +34,10 @@ For persistent use, add these packages through your usual Nix configuration.
 
 ## Development loop
 
+The locked proxy also supplies version-only `.info` metadata for locked
+modules. This lets native module inspection work from a fresh cache without
+inventing upstream release timestamps or adding mutable metadata to the lock.
+
 `nix shell 'github:nix-purifiers/go-purifier'` gives a shell with the
 flake's `go`, `gofmt`, gopls and `go-purifier`. Run go as usual. In a
 build with a current lockfile, the first go command builds the proxy tree
@@ -303,6 +307,24 @@ Ordinary Go consumers can use this proxy through `GOPROXY`, with the usual
 `GONOSUMDB` policy for modules absent from the public checksum database.
 The existing `publish` command publishes Git tags and command archives;
 serving a projected module proxy is separate.
+
+An ordinary consumer can select a higher version of a projected dependency
+through Go's minimal version selection. Exported `go.mod` files cannot impose
+a hard source constraint, so the projection does not guarantee that the Nix
+source survives a competing native requirement. An explicit purifier input
+restores that source binding when the dependency returns to a purified project.
+
+The native graph regression exercises transitive selection, retained indirect
+pins, root-only replacements, fresh-cache module inspection, and both kinds of
+purifier/ordinary sandwich:
+
+```zsh
+python3 -B tests/composition-graphs.py toolchain --state-root .composition-graphs
+```
+
+Its report marks the ordinary-consumer source guarantee as blocked. Add
+`--require-strict-publication` to make that limitation fail the command; the
+default command requires every supported case to pass.
 
 ## Examples
 
