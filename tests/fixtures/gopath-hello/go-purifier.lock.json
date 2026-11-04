@@ -1,0 +1,23 @@
+{
+  "gopath": {
+    "importPath": "example.org/app",
+    "goVersion": "go version go1.0.3",
+    "goos": "linux",
+    "goarch": "amd64"
+  },
+  "version": 1,
+  "proxy": "",
+  "noProxy": "",
+  "definitionFiles": [],
+  "definitionHash": "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+  "binaries": [
+    {
+      "name": "app",
+      "package": "example.org/app"
+    }
+  ],
+  "files": {},
+  "checkouts": [],
+  "vcsModules": [],
+  "contentHash": "sha256-r0N2OdoYmw2eLxeAB0nRL4VoOo0jiSwOwOVYWqdDSzY="
+}

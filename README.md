@@ -32,6 +32,51 @@ error and runs the ordinary tool with impure resolution.
 For persistent use, add these packages through your usual Nix configuration.
 
 
+## Pre-module GOPATH projects
+
+Select the project's Go SDK through the scope, independently of the modern
+Go used to compile the purifier helper:
+
+```nix
+scope = pkgs.go-purifier.overrideScope (_: _: { go = projectGo; });
+# scope.toolchain provides the selected native go and gofmt.
+# scope.buildGoPathProject { src = projectSource; } builds the captured graph.
+```
+
+In a checkout under the native `GOPATH/src`, resolve dependencies with the
+project's usual tools, then run:
+
+```sh
+go-purifier lock --gopath
+go-purifier prefetch
+go test ./...
+go build ./...
+```
+
+Capture queries the selected native `go list` for production and test imports,
+and pins clean external Git checkouts at their actual revisions. Builds use
+private GOPATH views and preserve the developer's source and lockfile. Each
+capture and SDK gets a separate compiled-package cache. Native `go get` keeps
+the developer's GOPATH so it can update dependencies; capture again afterward.
+For SDKs that removed GOPATH `go get`, prepare the Git checkouts with the
+project's usual VCS workflow before capture.
+
+The regression points are Go **1.0.3 on x86_64-linux** and the pinned current
+Go **1.26.10**. Both exercise capture, offline native build/test, sandboxed
+builds, dependency revision updates, ordinary downstream GOPATH compilation,
+and byte-identical local release archives. Publication tests stop at
+`publish --dry-run`; they also execute the extracted native artifact.
+These are exact points, not a claim about every intervening release.
+
+The tested projects use `CGO_ENABLED=0`. Capture records the native CGO setting;
+the builder accepts `cgoEnabled` and normal build inputs, but these tests do not
+establish CGO or external ABI compatibility. Project-local alternate GOPATH
+workspaces, non-Git dependency repositories, submodules, cross compilation,
+and historical editor-server compatibility need separate coverage. Keep
+external dependency checkouts clean before capture. The GOPATH builder exposes
+`all`, `packages`, `tests`, `release`, `repository`, `projections` and `fetches`;
+`repository` is a prepared source tree for ordinary native consumers.
+
 ## Development loop
 
 The locked proxy also supplies version-only `.info` metadata for locked

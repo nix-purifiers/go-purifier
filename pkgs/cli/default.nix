@@ -1,9 +1,14 @@
 # SPDX-License-Identifier: MIT
-{ lib, buildGoProject }:
+{
+  lib,
+  buildGoProject,
+  pkgs,
+  helperGo ? pkgs.go,
+}:
 let
   root = ../..;
 in
-(buildGoProject {
+((buildGoProject.override { go = helperGo; }) {
   src = lib.fileset.toSource {
     inherit root;
     fileset = lib.fileset.unions [

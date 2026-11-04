@@ -27,6 +27,7 @@ Commands:
   lock               write go-purifier.lock.json for the module or
                      workspace of the current directory, from go.mod and
                      go.sum as they are
+  lock --gopath      capture the native GOPATH graph and Git checkout revisions
   update [<module>...]
                      update every module the build needs to its latest
                      version, or only the named modules, with go get and

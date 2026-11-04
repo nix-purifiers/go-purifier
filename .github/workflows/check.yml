@@ -76,6 +76,31 @@ jobs:
             .composition-graphs/report.json
             .composition-graphs/commands.log
 
+  gopath-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - name: Current SDK native GOPATH workflow
+        run: |
+          tools="$(nix build --no-link --print-out-paths .#toolchain)"
+          version="$(nix eval --raw .#toolchain.go.version)"
+          python3 tests/gopath-native.py "$tools" "go$version"
+      - name: Original stable Go native GOPATH workflow
+        if: runner.os == 'Linux' && runner.arch == 'X64'
+        run: |
+          tools="$(nix build --no-link --print-out-paths .#checks.x86_64-linux.gopath-go10-tools)"
+          python3 tests/gopath-native.py "$tools" go1.0.3
+      - name: SDK recipes evaluate without IFD and survive cold-store copying
+        run: |
+          nix eval --impure --option allow-import-from-derivation false --json --expr 'import ./tests/sdk-context.nix {}'
+          python3 tests/sdk-portable.py
+
   conformance-relock:
     strategy:
       fail-fast: false

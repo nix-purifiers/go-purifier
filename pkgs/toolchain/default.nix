@@ -32,6 +32,7 @@
   purifierSrc,
   python3,
   writeShellScript,
+  writeText,
 }:
 let
   # The go-purifier Nix library, with the shared library linked in as
@@ -45,7 +46,13 @@ let
     export PYTHONPATH=${lib.escapeShellArg ("${purifierSrc}/tools")}
     exec ${python3}/bin/python3 ${../../tools/resolve_inputs.py}
   '';
+  sdkReference = writeText "go-sdk-reference.nix" (import ../../nix/lib/sdk-expression.nix go)
+  .expression;
   wrapperArgs = lib.escapeShellArgs [
+    "--set"
+    "GO_PURIFIER_GO_NIX"
+    "${sdkReference}"
+
     "--set"
     "GO_PURIFIER_INPUT_HELPER"
     "${inputHelper}"
@@ -72,7 +79,7 @@ let
     ])
   ];
 in
-runCommand "go-purifier-go-${go.version}"
+runCommand "go-purifier-go-${go.version or (lib.getVersion go)}"
   {
     nativeBuildInputs = [ makeWrapper ];
     passthru = { inherit go gopls cli; };
@@ -82,7 +89,8 @@ runCommand "go-purifier-go-${go.version}"
     };
   }
   ''
-    mkdir -p "$out/bin"
+    mkdir -p "$out/bin" "$out/nix-support"
+    ln -s ${sdkReference} "$out/nix-support/project-go-sdk.nix"
     for tool in ${go}/bin/*; do
       name=$(basename "$tool")
       if [ "$name" != go ]; then

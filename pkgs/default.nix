@@ -15,6 +15,7 @@
   # (nix/lib/build-go-project.nix). It takes go, the fetchers and the other
   # packages it builds with from the scope, so overrideScope on the scope
   # and .override on the builder replace them.
+  buildGoPathProject = callPackage ../nix/lib/build-go-path-project.nix { inherit (lib) purifier; };
   buildGoProject = callPackage ../nix/lib/build-go-project.nix { inherit (lib) purifier; };
   # The go-purifier command, built by buildGoProject from this
   # repository's own lockfile.

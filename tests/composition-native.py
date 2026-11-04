@@ -41,7 +41,7 @@ with tempfile.TemporaryDirectory(prefix='go-composition-') as temporary, ExitSta
         };
       in { packages.SYSTEM.default = project.all; checks.SYSTEM.proxy = project.proxy; };
     }'''.replace('SDK', snapshot).replace('SYSTEM', system))
-    run('nix', 'flake', 'lock', cwd=producer)
+    run('nix', 'flake', 'lock', 'path:' + str(producer), cwd=producer)
     (consumer / 'go.mod').write_text('module example.com/consumer\n\ngo 1.24\nrequire example.com/greeter v0.99.0\n')
     (consumer / 'main.go').write_text('package main\nimport ("fmt"; "example.com/greeter")\nfunc main(){fmt.Println(greeter.Greeting("Nix"))}\n')
     original = (consumer / 'go.mod').read_bytes()

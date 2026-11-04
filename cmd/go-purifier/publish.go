@@ -57,6 +57,14 @@ func publishCommand(args []string) error {
 	if err != nil {
 		return err
 	}
+	if root, lock, err := findGopathRoot(cwd); err != nil {
+		return err
+	} else if lock != nil {
+		if !semver.IsValid(version) {
+			return fmt.Errorf("%s is not a semantic release version", version)
+		}
+		return publishGopath(root, lock, lockFlag, version, push)
+	}
 	env, err := readGoEnv(goBin, cwd)
 	if err != nil {
 		return err

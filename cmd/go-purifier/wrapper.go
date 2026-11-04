@@ -49,6 +49,19 @@ func runGo(args []string) int {
 		fmt.Fprintf(os.Stderr, "go-purifier: %v\n", err)
 		return 1
 	}
+	if os.Getenv("GO_PURIFIER") != "0" {
+		dir, err := workingDir(args)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		if root, lock, err := findGopathRoot(dir); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		} else if lock != nil {
+			return runGopathGo(goBin, dir, root, lock, args)
+		}
+	}
 	env := os.Environ()
 	proxyDir := ""
 	if os.Getenv("GO_PURIFIER") != "0" {
