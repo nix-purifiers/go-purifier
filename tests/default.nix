@@ -370,7 +370,9 @@ in
 // lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") (
   let
     sdk = import ./gopath-sdk.nix { inherit pkgs; };
-    project = (packages.buildGoPathProject.override { go = sdk; }) { src = ./fixtures/testdata/gopath-hello; };
+    project = (packages.buildGoPathProject.override { go = sdk; }) {
+      src = ./fixtures/testdata/gopath-hello;
+    };
   in
   {
     gopath-go10-tools = (packages.overrideScope (_: _: { go = sdk; })).toolchain;
