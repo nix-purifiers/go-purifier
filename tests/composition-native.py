@@ -158,7 +158,7 @@ with tempfile.TemporaryDirectory(prefix='go-composition-') as temporary, ExitSta
         checks.SYSTEM.proxy = project.proxy;
       };
     }'''.replace('SDK', snapshot).replace('SYSTEM', system))
-    run('nix', 'flake', 'lock', cwd=consumer)
+    run('nix', 'flake', 'lock', 'path:' + str(consumer), cwd=consumer)
     outputs = json.loads(run('nix', 'build', '--json', '--no-link', 'path:' + str(consumer)))
     built = Path(outputs[0]['outputs']['out'])
     assert run(built / 'bin/consumer') == expected
