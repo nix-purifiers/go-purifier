@@ -52,6 +52,7 @@ let
     inherit lock fetch system;
     cli = cli';
   };
+  gopathLines = map (a: "${a.path}\t${fetch a}\n") (builtins.attrValues lock.checkouts);
   fileLines = map (a: "${a.path}\t${fetch a}\n") lock.files;
   vcsLines = map (
     m:
@@ -75,7 +76,9 @@ derivation {
   inherit system;
   builder = cli';
   args = [ "link-tree" ];
-  manifest = builtins.concatStringsSep "" (fileLines ++ vcsLines);
+  manifest = builtins.concatStringsSep "" (
+    if lock ? gopath then gopathLines else fileLines ++ vcsLines
+  );
   infos = builtins.concatStringsSep "" (
     map (path: "${path}\t${builtins.toJSON infos.${path}}\n") (builtins.attrNames infos)
   );

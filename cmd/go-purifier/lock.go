@@ -36,6 +36,8 @@ const defaultProxy = "https://proxy.golang.org"
 // download against), the repository and revision of each module from
 // version control, the main packages, and what tells a stale lockfile.
 type Lock struct {
+	raw           []byte
+	Gopath        *gopathLock    `json:"gopath,omitempty"`
 	ProjectInputs []projectInput `json:"projectInputs,omitempty"`
 	Version       int            `json:"version"`
 	// The module proxy the files were downloaded from. A file is at its
@@ -166,6 +168,11 @@ func (e goEnv) lockRoot() (string, bool, error) {
 // go.sum as they are, and a lock of an unchanged project writes the same
 // lockfile byte for byte.
 func lockCommand(args []string) error {
+	for i, argument := range args {
+		if argument == "--gopath" {
+			return lockGopathCommand(append(append([]string{}, args[:i]...), args[i+1:]...))
+		}
+	}
 	references, args, err := moduleInputFlags(args)
 	if err != nil {
 		return err
@@ -599,6 +606,10 @@ func readLock(path string) (*Lock, error) {
 	var lock Lock
 	if err := json.Unmarshal(data, &lock); err != nil {
 		return nil, fmt.Errorf("%s is not a go-purifier lockfile (%v); run `go-purifier lock` to write it again", path, err)
+	}
+	lock.raw = append([]byte(nil), data...)
+	if lock.Gopath != nil && !validGopathImportPath(lock.Gopath.ImportPath) {
+		return nil, fmt.Errorf("invalid GOPATH project import path %q", lock.Gopath.ImportPath)
 	}
 	if lock.Version == lockFormatVersion {
 		want, err := contentHash(data)

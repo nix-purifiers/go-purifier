@@ -29,6 +29,22 @@ func prefetchCommand(args []string) error {
 	if err != nil {
 		return err
 	}
+	if root, lock, err := findGopathRoot(cwd); err != nil {
+		return err
+	} else if lock != nil {
+		goBin, err := realGo()
+		if err != nil {
+			return err
+		}
+		if _, err := gopathEnvironment(goBin, root, lock); err != nil {
+			return err
+		}
+		if err := pinGopathToolchain(root); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "go-purifier: prefetched native GOPATH checkouts and toolchain")
+		return nil
+	}
 	root, ok := findLockRoot(cwd)
 	if !ok {
 		return errors.New("the current directory is not inside a Go module or workspace")
@@ -53,8 +69,14 @@ func prefetchCommand(args []string) error {
 		return err
 	}
 
-	// The toolchain: the store paths of this command (the toolchain package
-	// the go wrapper and gopls belong to) and of the go command it runs.
+	if err := pinGopathToolchain(root); err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "go-purifier: prefetched the downloads of %s and the toolchain\n", lockPath)
+	return nil
+}
+
+func pinGopathToolchain(root string) error {
 	dir := filepath.Join(root, stateDirName)
 	self, err := os.Executable()
 	if err != nil {
@@ -80,7 +102,6 @@ func prefetchCommand(args []string) error {
 			return err
 		}
 	}
-	fmt.Fprintf(os.Stderr, "go-purifier: prefetched the downloads of %s and the toolchain, with GC roots in %s\n", lockPath, dir)
 	return nil
 }
 

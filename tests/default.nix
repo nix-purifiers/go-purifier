@@ -353,3 +353,32 @@ in
     rejects "lock-version" ./fixtures/conformance/version ".entries"
       "has lock format version 99";
 }
+
+// {
+  gopath-current =
+    let
+      project = packages.buildGoPathProject { src = ./fixtures/gopath-hello; };
+    in
+    pkgs.runCommand "current-go-gopath-project" { } ''
+      test "$(${project.packages.app}/bin/app)" = hello
+      test "$(cat ${project.all}/nix-support/target-go-version)" = "$(${pkgs.go}/bin/go version)"
+      test -e ${project.repository}/src/example.org/app/main.go
+      touch "$out"
+    '';
+}
+
+// lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") (
+  let
+    sdk = import ./gopath-sdk.nix { inherit pkgs; };
+    project = (packages.buildGoPathProject.override { go = sdk; }) { src = ./fixtures/gopath-hello; };
+  in
+  {
+    gopath-go10-tools = (packages.overrideScope (_: _: { go = sdk; })).toolchain;
+    gopath-go10 = pkgs.runCommand "go10-gopath-project" { passthru = { inherit project sdk; }; } ''
+      test "$(${project.packages.app}/bin/app)" = hello
+      test "$(cat ${project.all}/nix-support/target-go-version)" = 'go version go1.0.3'
+      test -f ${project.release}/app-dev-x86_64-linux.tar.gz
+      touch "$out"
+    '';
+  }
+)
