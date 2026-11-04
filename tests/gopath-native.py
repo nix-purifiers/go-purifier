@@ -110,7 +110,8 @@ with tempfile.TemporaryDirectory(prefix='go-gopath-native-') as temporary:
             assert (root/path).read_bytes() == contents
 
         # Build the same selected SDK and graph through the public Nix builder.
-        build_env = dict(env, GOPATH_TEST_ROOT=str(root), GOPATH_TEST_FLAKE=str(flake), GOPATH_TEST_SDK=str(tools/'nix-support/project-go-sdk.nix'))
+        supports_trimpath = '-trimpath' in command(['go','help','build'], root, env, True)
+        build_env = dict(env, GOPATH_TEST_VARY_PATHS='yes' if supports_trimpath else 'no', GOPATH_TEST_ROOT=str(root), GOPATH_TEST_FLAKE=str(flake), GOPATH_TEST_SDK=str(tools/'nix-support/project-go-sdk.nix'))
         expression = '''let
           f = builtins.getFlake ("path:" + builtins.getEnv "GOPATH_TEST_FLAKE");
           system = builtins.currentSystem;
@@ -119,10 +120,18 @@ with tempfile.TemporaryDirectory(prefix='go-gopath-native-') as temporary:
           project = (pkgs.go-purifier.buildGoPathProject.override { go = sdk; }) {
             src = /. + builtins.getEnv "GOPATH_TEST_ROOT"; version = "v0.1.0";
           };
-        in [ project.all project.release project.repository ]'''
+          variant = project.all.overrideAttrs (_: {
+            preBuild = ''mkdir -p "$TMPDIR/another-build-root"; export TMPDIR="$TMPDIR/another-build-root"'';
+          });
+        in [ project.all project.release project.repository ] ++
+          pkgs.lib.optional (builtins.getEnv "GOPATH_TEST_VARY_PATHS" == "yes") variant'''
         built = json.loads(command(['nix','build','--impure','--no-link','--json','--expr',expression], root, build_env, True))
         paths = [Path(output) for item in built for output in item['outputs'].values()]
-        pure = next(p for p in paths if (p/'bin/app').exists())
+        binaries = [p/'bin/app' for p in paths if (p/'bin/app').exists()]
+        if supports_trimpath:
+            assert len(binaries) == 2
+            assert binaries[0].read_bytes() == binaries[1].read_bytes(), 'Go embedded the varying build directory'
+        pure = binaries[0].parent.parent
         release = next(p for p in paths if (p/'SHA256SUMS').exists())
         repository = next(p for p in paths if (p/'src/example.org/legacy').exists())
         assert command([str(pure/'bin/app')], root, offline, True).strip() == '42 on '+expected_version
