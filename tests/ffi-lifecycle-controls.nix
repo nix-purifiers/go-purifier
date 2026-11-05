@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MIT
 # Explicit diagnostic target, deliberately not added to the default checks.
-{ pkgs, build }:
+{
+  pkgs,
+  build,
+  includeUnsupportedConfinedGo ? false,
+}:
 let
   extension = pkgs.stdenv.hostPlatform.extensions.sharedLibrary;
   producer = build {
@@ -22,6 +26,10 @@ pkgs.runCommand "ffi-lifecycle-diagnostics"
       pkgs.python3
       pkgs.jdk
     ];
+    passthru.unsupportedComparison = import ./ffi-lifecycle-controls.nix {
+      inherit pkgs build;
+      includeUnsupportedConfinedGo = true;
+    };
     passthru.controllerCheck =
       pkgs.runCommand "ffi-lifecycle-controller-check"
         {
@@ -40,6 +48,7 @@ pkgs.runCommand "ffi-lifecycle-diagnostics"
   ''
     python ${./ffi_lifecycle_controls.py} \
       --java ${pkgs.jdk}/bin/java --javac ${pkgs.jdk}/bin/javac --jcmd ${pkgs.jdk}/bin/jcmd \
+      ${pkgs.lib.optionalString includeUnsupportedConfinedGo "--include-unsupported-confined-go"} \
       --java-major ${pkgs.lib.versions.major pkgs.jdk.version} \
       --c-library ${ordinary}/lib/libcontrol${extension} \
       --go-library ${producer.libraries.proof}/lib/libproof${extension} \
