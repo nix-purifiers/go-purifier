@@ -403,6 +403,7 @@ let
               system = stdenv.hostPlatform.system;
               targetMetadata = {
                 buildMode = "c-shared";
+                runtimeLifetime = "process";
                 go = go.version;
                 inherit package;
               };

@@ -20,6 +20,24 @@ def main():
     controls=importlib.util.module_from_spec(spec);spec.loader.exec_module(controls)
     with tempfile.TemporaryDirectory(prefix='ffi-controller-check-') as temporary:
         root=Path(temporary)
+        # Invalid/missing producer lifetime must fail before starting any JVM.
+        for lifetime in [None,'confined']:
+            catalog=dict(libraries=dict(proof=str(root/'proof.so')),
+                targets=dict(buildMode='c-shared',go='diagnostic'))
+            if lifetime is not None: catalog['targets']['runtimeLifetime']=lifetime
+            catalog_path=root/'invalid-catalog.json'
+            catalog_path.write_text(json.dumps(catalog))
+            command=[sys.executable,str(args.controller)]
+            for name in ['java','javac','jcmd']:
+                command += ['--'+name,str(root/'must-not-start')]
+            command += ['--c-library',str(root/'c.so'),'--go-library',str(root/'proof.so'),
+                '--producer-catalog',str(catalog_path),'--java-major','21',
+                '--sdk-description','invalid lifetime negative control',
+                '--output',str(root/('rejected-'+str(lifetime)))]
+            rejected=subprocess.run(command,text=True,capture_output=True,timeout=5)
+            assert rejected.returncode!=0
+            assert 'Go producer must declare process runtime lifetime' in rejected.stderr
+        print('CONTROLLER-CHECK invalid producer lifetimes rejected before JVM launch',flush=True)
         (root/'Hold.java').write_text('public class Hold { public static void main(String[] a) throws Exception { System.err.println("OWNED-JAVA-PID:"+ProcessHandle.current().pid()); Thread.sleep(60000); } }')
         subprocess.run([str(args.javac),'Hold.java'],cwd=root,check=True,timeout=20)
         held=controls.observe([args.java,'Hold'],root,'held-java',jcmd=args.jcmd,

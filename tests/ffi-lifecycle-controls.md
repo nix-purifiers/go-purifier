@@ -59,7 +59,8 @@ in import (/. + builtins.getEnv "GO_FFI_SOURCE" + "/tests/ffi-lifecycle-controls
 
 Keep compiler/runtime versions pinned by the same Go source lock. The report
 reads the selected Go version and library path from the actual producer native
-catalog, checks that catalog against the loaded library, and records the pinned
+catalog, requires its `runtimeLifetime` to be `process`, checks that catalog
+against the loaded library, and records the pinned
 JDK version and actual `java -version` output.
 No SDK release matrix is expanded by this control.
 
@@ -73,7 +74,8 @@ an owned sleeping JVM and an owned TERM-ignoring process. It checks the JVM's
 reported PID against the parent's child PID, verifies nonzero timeout outcomes
 and reaping, and records whether a real JVM thread dump was available. Run the
 same Nix expression with `.controllerCheck` on the imported result. This is a
-controller check, not a supported SDK tuple.
+controller check, not a supported SDK tuple. It also verifies that missing or
+confined producer lifetime metadata is rejected before launching any JVM.
 
 ## Dedicated native CI job
 
