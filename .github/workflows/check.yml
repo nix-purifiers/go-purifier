@@ -225,7 +225,7 @@ jobs:
             > "$RUNNER_TEMP/ffi-lifecycle/main.drv"
           nix eval --impure --raw --expr '(import (/. + builtins.getEnv "GO_FFI_EXPRESSION")).controllerCheck.drvPath' \
             > "$RUNNER_TEMP/ffi-lifecycle/controller.drv"
-      - name: Run lifecycle cases and controller failure checks
+      - name: Run six supported lifetime controls and controller failure checks
         shell: bash
         run: |
           set +e

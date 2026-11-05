@@ -122,6 +122,8 @@ def main():
         parser.add_argument('--'+name,required=True,type=Path)
     parser.add_argument('--java-major',required=True)
     parser.add_argument('--sdk-description',required=True)
+    parser.add_argument('--include-unsupported-confined-go',action='store_true',
+        help='also exercise unsupported confined Go unload; abnormal outcomes remain failures')
     args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=True)
     directory=args.output.resolve()
     producer=json.loads(args.producer_catalog.read_text())
@@ -129,9 +131,9 @@ def main():
         raise ValueError('producer catalog does not identify the Go library being loaded')
     if producer['targets']['buildMode']!='c-shared' or not producer['targets']['go']:
         raise ValueError('producer catalog lacks the selected Go SDK/build mode')
-    report=dict(scope='diagnostic controls only; original confined consumer remains unchanged',
+    report=dict(scope='lifecycle controls; unsupported confined Go is opt-in and retains failure status',
         sdkDescription=args.sdk_description+'; producer Go '+producer['targets']['go'],
-        producerCatalog=producer,cases=[])
+        producerCatalog=producer,includeUnsupportedConfinedGo=args.include_unsupported_confined_go,cases=[])
     def interrupted(signum,frame): raise Interrupted(signum)
     signal.signal(signal.SIGTERM,interrupted);signal.signal(signal.SIGINT,interrupted)
     exit_code=1
@@ -145,6 +147,8 @@ def main():
         for kind,library in [('c',args.c_library),('go',args.go_library)]:
             for mode in ['load','call']:
                 for lifetime in ['confined','process']:
+                    if kind=='go' and lifetime=='confined' and not args.include_unsupported_confined_go:
+                        continue
                     name=kind+'-'+mode+'-'+lifetime
                     print('LIFECYCLE-CONTROL '+name+':start',flush=True)
                     row=observe([args.java,'--enable-preview','--enable-native-access=ALL-UNNAMED',
