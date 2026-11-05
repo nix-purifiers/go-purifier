@@ -61,6 +61,7 @@ let
       src,
       # Native repositories exported by other Nix-built Go projects.
       dependencies ? null,
+      sharedLibraries ? { },
       # The fetchers of the shared library to replace, such as a fetchurl
       # with credentials or a company mirror, passed to its fetchEntry.
       fetchers ? { },
@@ -361,12 +362,57 @@ let
             ln -s ${all}/bin/${binary.name} "$out/bin/${binary.name}"
           '';
 
-      packages = builtins.listToAttrs (
+      binaryPackages = builtins.listToAttrs (
         map (b: {
           inherit (b) name;
           value = mkPackage b;
         }) currentLock.binaries
       );
+
+      libraries = lib.mapAttrs (
+        name: package:
+        let
+          extension = stdenv.hostPlatform.extensions.sharedLibrary;
+          built = goDerivation {
+            pname = "${name}-c-shared";
+            version = "locked";
+            buildPhase = ''
+              runHook preBuild
+              export CGO_ENABLED=1
+              mkdir -p "$out/lib" "$out/include"
+              goWithHint go build ${lib.escapeShellArgs goFlags} -buildmode=c-shared \
+                -o "$out/lib/lib${name}${extension}" ${lib.escapeShellArg package}
+              test -s "$out/lib/lib${name}.h"
+              mv "$out/lib/lib${name}.h" "$out/include/"
+              runHook postBuild
+            '';
+            installPhase = ''
+              runHook preInstall
+              runHook postInstall
+            '';
+          };
+        in
+        built
+        // {
+          projections =
+            projections
+            // purifier.nativeProjections {
+              producer = built;
+              libraries.${name} = "lib/lib${name}${extension}";
+              includeDirectories = [ "include" ];
+              system = stdenv.hostPlatform.system;
+              targetMetadata = {
+                buildMode = "c-shared";
+                go = go.version;
+                inherit package;
+              };
+              inherit runCommand python3;
+            };
+        }
+      ) sharedLibraries;
+      packages =
+        binaryPackages
+        // lib.mapAttrs' (name: package: lib.nameValuePair "native-${name}" package) libraries;
 
       # A gzipped tarball per command, named <command>_<os>_<arch>, or
       # <command>_<version>_<os>_<arch> with a version, with fixed times and
@@ -395,7 +441,22 @@ let
             fi
           '';
     in
+    assert
+      sharedLibraries == { }
+      || (
+        stdenv.buildPlatform.system == stdenv.hostPlatform.system && lib.versionAtLeast go.version "1.18"
+      )
+      || throw "go-purifier: sharedLibraries requires a native Go SDK with c-shared support";
+    assert
+      builtins.all (
+        name:
+        builtins.match "[A-Za-z0-9_][A-Za-z0-9_-]*" name != null
+        && !(builtins.hasAttr "native-${name}" binaryPackages)
+        && builtins.elem sharedLibraries.${name} (map (binary: binary.package) currentLock.binaries)
+      ) (builtins.attrNames sharedLibraries)
+      || throw "go-purifier: sharedLibraries must select locked main packages with unique native output names";
     {
+      inherit libraries;
       inherit
         packages
         projections

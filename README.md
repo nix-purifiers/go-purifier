@@ -444,6 +444,36 @@ in
 A flake that packages fzf for others calls `pkgs.go-purifier.buildGoProject`
 with the same arguments, as in the Quickstart.
 
+## Native shared-library projections
+
+`buildGoProject` can additionally compile locked main packages using Go's native
+`c-shared` build mode:
+
+```nix
+sharedLibraries.proof = "example.com/ffi";
+```
+
+The selected main package must occur in the lock's package inventory and must
+deliberately export a C ABI with cgo `//export` declarations. The build uses the
+same locked module environment, compiler, tags, linker flags and Nix buildInputs,
+with CGO enabled. It installs the shared library and the compiler-generated C
+header. The opt-in mode requires a native Go SDK compatible with the builder's
+Go1.18+ flags; it does not add cross-compilation or historical SDK coverage.
+
+The result exposes `libraries.proof` and `packages.native-proof`; both carry
+`projections.native`, `python-ffi`, and `java-ffi` alongside the existing Go
+source repository view. The catalog records the selected Go compiler and build
+mode. Shared views use the common binary ABI validation and retain the producer
+runtime closure. They do not infer symbol signatures, translate Go types, or
+synthesize JNI/Python bindings. Executable and source-package outputs remain
+available with their existing interfaces; release archives still publish the
+locked commands.
+
+The check compiles a real exported C function, calls it from ordinary Python
+ctypes, Java FFM and C using the generated header, and independently verifies
+the loaded symbol's library origin with dladdr. A changed producer returns43,
+while the original still returns42. Java21 uses preview FFM flags.
+
 ## Credits
 
 The purifier idea was inspired by nixcloud's
