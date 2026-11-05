@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "proxy": "https://proxy.golang.org",
+  "noProxy": "",
+  "definitionFiles": [
+    "go.mod",
+    "go.sum"
+  ],
+  "definitionHash": "sha256-sqak8Ahv5rvoP6NLeZzqDE5ZIY+OKocB3LLX3JlpP1Q=",
+  "binaries": [
+    {
+      "name": "ffi",
+      "package": "example.com/ffi"
+    }
+  ],
+  "files": {},
+  "checkouts": [],
+  "vcsModules": [],
+  "contentHash": "sha256-5Rkqnx5nu51ntVdkfQOIKUVX4dchdCYD4O0hRVoAL4s="
+}

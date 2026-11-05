@@ -106,6 +106,7 @@ let
       '';
 in
 {
+  native-projections = import ./go-ffi.nix { inherit pkgs build; };
   proxy-version-metadata =
     let
       infos = import ../nix/lib/proxy-info.nix { inherit lib; } [
