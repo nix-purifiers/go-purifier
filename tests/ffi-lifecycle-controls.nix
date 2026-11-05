@@ -43,6 +43,7 @@ pkgs.runCommand "ffi-lifecycle-diagnostics"
       --java-major ${pkgs.lib.versions.major pkgs.jdk.version} \
       --c-library ${ordinary}/lib/libcontrol${extension} \
       --go-library ${producer.libraries.proof}/lib/libproof${extension} \
-      --sdk-description '${pkgs.stdenv.hostPlatform.system}; Go ${pkgs.go.version}; JDK ${pkgs.jdk.version}' \
+      --producer-catalog ${producer.libraries.proof.projections.native.catalog} \
+      --sdk-description '${pkgs.stdenv.hostPlatform.system}; JDK ${pkgs.jdk.version}' \
       --output "$out"
   ''

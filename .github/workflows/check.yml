@@ -187,3 +187,74 @@ jobs:
         run: tests/release.sh toolchain/bin
       - name: Modules from Mercurial, Subversion, Bazaar and Fossil
         run: tests/vcs-systems.sh toolchain/bin
+
+  ffi-lifecycle-diagnostics:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    env:
+      GO_FFI_SOURCE: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - name: Prepare isolated lifecycle targets
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/ffi-lifecycle"
+          export GO_FFI_EXPRESSION="$RUNNER_TEMP/ffi-lifecycle/target.nix"
+          echo "GO_FFI_EXPRESSION=$GO_FFI_EXPRESSION" >> "$GITHUB_ENV"
+          git rev-parse HEAD > "$RUNNER_TEMP/ffi-lifecycle/source-revision"
+          cat > "$GO_FFI_EXPRESSION" <<'NIX'
+          let
+            f = builtins.getFlake ("path:" + builtins.getEnv "GO_FFI_SOURCE");
+            p = import f.inputs.nixpkgs {
+              system = builtins.currentSystem;
+              overlays = [ f.overlays.default ];
+            };
+          in import (/. + builtins.getEnv "GO_FFI_SOURCE" + "/tests/ffi-lifecycle-controls.nix") {
+            pkgs = p;
+            build = p.go-purifier.buildGoProject;
+          }
+          NIX
+          nix eval --impure --raw --expr '(import (/. + builtins.getEnv "GO_FFI_EXPRESSION")).drvPath' \
+            > "$RUNNER_TEMP/ffi-lifecycle/main.drv"
+          nix eval --impure --raw --expr '(import (/. + builtins.getEnv "GO_FFI_EXPRESSION")).controllerCheck.drvPath' \
+            > "$RUNNER_TEMP/ffi-lifecycle/controller.drv"
+      - name: Run lifecycle cases and controller failure checks
+        shell: bash
+        run: |
+          set +e
+          nix build --impure --no-link --print-build-logs --file "$GO_FFI_EXPRESSION" \
+            2>&1 | tee "$RUNNER_TEMP/ffi-lifecycle/main-build.log"
+          main_pipeline=("${PIPESTATUS[@]}")
+          nix build --impure --no-link --print-build-logs \
+            --expr '(import (/. + builtins.getEnv "GO_FFI_EXPRESSION")).controllerCheck' \
+            2>&1 | tee "$RUNNER_TEMP/ffi-lifecycle/controller-build.log"
+          controller_pipeline=("${PIPESTATUS[@]}")
+          set -e
+          printf '%s\n' "${main_pipeline[0]}" > "$RUNNER_TEMP/ffi-lifecycle/main.status"
+          printf '%s\n' "${controller_pipeline[0]}" > "$RUNNER_TEMP/ffi-lifecycle/controller.status"
+          if (( main_pipeline[0] != 0 )); then exit "${main_pipeline[0]}"; fi
+          if (( controller_pipeline[0] != 0 )); then exit "${controller_pipeline[0]}"; fi
+          if (( main_pipeline[1] != 0 || controller_pipeline[1] != 0 )); then exit 1; fi
+      - name: Retain native Nix logs even when a case fails
+        if: always()
+        shell: bash
+        run: |
+          for target in main controller; do
+            record="$RUNNER_TEMP/ffi-lifecycle/$target.drv"
+            if [ -s "$record" ]; then
+              nix log "$(cat "$record")" > "$RUNNER_TEMP/ffi-lifecycle/$target-nix.log" 2>&1 || true
+            fi
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: ffi-lifecycle-${{ matrix.runner }}
+          path: ${{ runner.temp }}/ffi-lifecycle
+          if-no-files-found: error

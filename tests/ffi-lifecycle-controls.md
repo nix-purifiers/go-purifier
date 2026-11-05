@@ -50,7 +50,9 @@ in import (/. + builtins.getEnv "GO_FFI_SOURCE" + "/tests/ffi-lifecycle-controls
 ```
 
 Keep compiler/runtime versions pinned by the same Go source lock. The report
-records the selected Go/JDK versions and actual `java -version` output.
+reads the selected Go version and library path from the actual producer native
+catalog, checks that catalog against the loaded library, and records the pinned
+JDK version and actual `java -version` output.
 No SDK release matrix is expanded by this control.
 
 A separate `.controllerCheck` passthru target evaluates failure handling with
@@ -60,19 +62,18 @@ and reaping, and records whether a real JVM thread dump was available. Run the
 same Nix expression with `.controllerCheck` on the imported result. This is a
 controller check, not a supported SDK tuple.
 
-## Proposed native CI plan
+## Dedicated native CI job
 
-The feature owner can add one temporary, read-only diagnostic job on
-`ubuntu-latest` and `macos-latest`, after reviewing this patch. Run the explicit
-target and its controller check separately from the default flake checks so the original confined-case
-failure cannot cancel the comparison before all cases finish. Allow a bounded
-15-minute job for SDK substitution/build and the sequential process controls.
+The workflow adds an isolated diagnostic job on `ubuntu-latest` and
+`macos-latest`, with `fail-fast: false` and a 15-minute timeout. Existing flake
+checks and the original confined consumer remain unchanged. The job runs the
+explicit target and its controller check; the controller check still runs when
+the lifecycle cases fail, and either failure keeps the job nonzero.
 
-Capture the derivation path before building. Preserve both build output and
-`nix log <derivation>` with `if: always()` artifact collection. Keep the build's
-nonzero status; do not use `continue-on-error` to turn the diagnostic into a
-passing gate. No job cancellation/retry or feature-head publication is part of
-this proposal.
+The job records source and derivation identities, both build outputs and
+`nix log` output. Artifact collection uses `if: always()` so the structured
+`LIFECYCLE-REPORT` in the log survives a failing case. No `continue-on-error`,
+job cancellation/retry or feature-head publication is part of this proposal.
 
 Compare ordinary C against Go, load against call, and confined against process
 lifetime. A process-lifetime success alone is not a production fix or evidence
