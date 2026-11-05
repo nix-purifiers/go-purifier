@@ -118,14 +118,20 @@ def observe(command, directory, name, jcmd=None, deadline=45, trace_after=8, att
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    for name in ['java','javac','jcmd','c-library','go-library','output']:
+    for name in ['java','javac','jcmd','c-library','go-library','producer-catalog','output']:
         parser.add_argument('--'+name,required=True,type=Path)
     parser.add_argument('--java-major',required=True)
     parser.add_argument('--sdk-description',required=True)
     args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=True)
     directory=args.output.resolve()
+    producer=json.loads(args.producer_catalog.read_text())
+    if Path(producer['libraries']['proof']).resolve()!=args.go_library.resolve():
+        raise ValueError('producer catalog does not identify the Go library being loaded')
+    if producer['targets']['buildMode']!='c-shared' or not producer['targets']['go']:
+        raise ValueError('producer catalog lacks the selected Go SDK/build mode')
     report=dict(scope='diagnostic controls only; original confined consumer remains unchanged',
-        sdkDescription=args.sdk_description,cases=[])
+        sdkDescription=args.sdk_description+'; producer Go '+producer['targets']['go'],
+        producerCatalog=producer,cases=[])
     def interrupted(signum,frame): raise Interrupted(signum)
     signal.signal(signal.SIGTERM,interrupted);signal.signal(signal.SIGINT,interrupted)
     exit_code=1
