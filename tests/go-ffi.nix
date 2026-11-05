@@ -32,7 +32,8 @@ pkgs.runCommand "go-c-shared-ordinary-consumers"
     nativeBuildInputs = [
       pkgs.stdenv.cc
       pkgs.python3
-    ];
+    ]
+    ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isDarwin pkgs.cctools;
   }
   ''
     test -e ${
@@ -57,8 +58,8 @@ pkgs.runCommand "go-c-shared-ordinary-consumers"
     C
     $CC ordinary.c -I${package}/include -L${package}/lib -lproof -Wl,-rpath,${package}/lib -o ordinary
     ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
-      otool -D ${package}/lib/libproof.dylib | tail -n +2 | grep -Fx ${package}/lib/libproof.dylib
-      otool -L ./ordinary | grep -F ${package}/lib/libproof.dylib
+      ${pkgs.cctools}/bin/otool -D ${package}/lib/libproof.dylib | tail -n +2 | grep -Fx ${package}/lib/libproof.dylib
+      ${pkgs.cctools}/bin/otool -L ./ordinary | grep -F ${package}/lib/libproof.dylib
     ''}
     ./ordinary
     touch $out
