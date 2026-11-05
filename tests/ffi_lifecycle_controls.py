@@ -131,6 +131,8 @@ def main():
         raise ValueError('producer catalog does not identify the Go library being loaded')
     if producer['targets']['buildMode']!='c-shared' or not producer['targets']['go']:
         raise ValueError('producer catalog lacks the selected Go SDK/build mode')
+    if producer['targets'].get('runtimeLifetime')!='process':
+        raise ValueError('Go producer must declare process runtime lifetime')
     report=dict(scope='lifecycle controls; unsupported confined Go is opt-in and retains failure status',
         sdkDescription=args.sdk_description+'; producer Go '+producer['targets']['go'],
         producerCatalog=producer,includeUnsupportedConfinedGo=args.include_unsupported_confined_go,cases=[])

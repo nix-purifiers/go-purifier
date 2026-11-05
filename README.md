@@ -463,7 +463,13 @@ Go1.18+ flags; it does not add cross-compilation or historical SDK coverage.
 The result exposes `libraries.proof` and `packages.native-proof`; both carry
 `projections.native`, `python-ffi`, and `java-ffi` alongside the existing Go
 source repository view. The catalog records the selected Go compiler and build
-mode. Shared views use the common binary ABI validation and retain the producer
+mode, and automatically declares `targets.runtimeLifetime = "process"`.
+Go C-shared libraries include a Go runtime and must remain loaded for the
+process lifetime; explicit unloading is unsupported. Consumers must read and
+validate that contract. Java FFM consumers use a process-lifetime arena and
+exit naturally; they must not use a confined arena to unload the Go runtime.
+Missing lifetime metadata from another producer does not guarantee that
+producer is safe to unload. Shared views use the common binary ABI validation and retain the producer
 runtime closure. They do not infer symbol signatures, translate Go types, or
 synthesize JNI/Python bindings. Executable and source-package outputs remain
 available with their existing interfaces; release archives still publish the
@@ -472,7 +478,10 @@ locked commands.
 The check compiles a real exported C function, calls it from ordinary Python
 ctypes, Java FFM and C using the generated header, and independently verifies
 the loaded symbol's library origin with dladdr. A changed producer returns43,
-while the original still returns42. Java21 uses preview FFM flags.
+while the original still returns42. Java21 uses preview FFM flags. The bounded
+consumer checks require natural process exit. The opt-in lifecycle comparison
+retains unsupported confined Go unload cases and their nonzero failure status;
+it does not establish an internal shutdown failure mechanism.
 
 ## Credits
 
