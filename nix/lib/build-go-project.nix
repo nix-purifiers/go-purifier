@@ -49,6 +49,7 @@
   zstd,
   python3,
   writeText,
+  fixDarwinDylibNames,
   # The functions of the shared library of the nix-purifiers, which the
   # go-purifier overlay passes.
   purifier,
@@ -376,6 +377,11 @@ let
           built = goDerivation {
             pname = "${name}-c-shared";
             version = "locked";
+            nativeBuildInputs = [
+              go
+            ]
+            ++ nativeBuildInputs
+            ++ lib.optional stdenv.hostPlatform.isDarwin fixDarwinDylibNames;
             buildPhase = ''
               runHook preBuild
               export CGO_ENABLED=1

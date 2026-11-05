@@ -56,6 +56,10 @@ pkgs.runCommand "go-c-shared-ordinary-consumers"
     int main(void) { return answer() == 42 ? 0 : 1; }
     C
     $CC ordinary.c -I${package}/include -L${package}/lib -lproof -Wl,-rpath,${package}/lib -o ordinary
+    ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+      otool -D ${package}/lib/libproof.dylib | tail -n +2 | grep -Fx ${package}/lib/libproof.dylib
+      otool -L ./ordinary | grep -F ${package}/lib/libproof.dylib
+    ''}
     ./ordinary
     touch $out
   ''
