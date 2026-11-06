@@ -483,6 +483,21 @@ consumer checks require natural process exit. The opt-in lifecycle comparison
 retains unsupported confined Go unload cases and their nonzero failure status;
 it does not establish an internal shutdown failure mechanism.
 
+## Supported Go releases
+
+Required CI exercises both currently supported upstream release lines, Go 1.26
+and 1.27, using the exact SDKs in `flake.lock` (currently 1.26.10 and 1.27.3).
+Each runs on x86-64 Linux, ARM Linux and ARM macOS. The checks build and run
+locked module, workspace, local-replacement and VCS fixtures; build and test
+fzf 0.74.5; test the purifier; and exercise the offline development/editor loop.
+The default SDK remains Go 1.26.10. Historical-version checks are separate from
+this supported-release matrix.
+
+The release lines follow [Go's support policy](https://go.dev/doc/devel/release).
+When a new Go release changes that set, update the matrix and pinned SDKs
+together. A matrix entry establishes execution of its pinned patch version;
+it does not imply that every historical patch was tested.
+
 ## Credits
 
 The purifier idea was inspired by nixcloud's
