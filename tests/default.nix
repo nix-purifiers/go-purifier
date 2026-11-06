@@ -12,6 +12,7 @@
   pkgs,
   readLock,
   overlay,
+  supportedVersions ? true,
 }:
 let
   inherit (pkgs) lib runCommand;
@@ -384,4 +385,8 @@ in
       touch "$out"
     '';
   }
+)
+
+// lib.optionalAttrs supportedVersions (
+  import ./supported-versions.nix { inherit pkgs overlay readLock; }
 )

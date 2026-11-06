@@ -258,3 +258,24 @@ jobs:
           name: ffi-lifecycle-${{ matrix.runner }}
           path: ${{ runner.temp }}/ffi-lifecycle
           if-no-files-found: error
+
+  supported-go:
+    name: supported-go (${{ matrix.runner }}, ${{ matrix.go }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+        go: [1-26, 1-27]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - name: Build and test locked samples with the selected SDK
+        run: |
+          system=$(nix eval --impure --raw --expr builtins.currentSystem)
+          nix build --no-link --print-build-logs ".#checks.$system.supported-go-${{ matrix.go }}"
+          nix build ".#checks.$system.supported-go-${{ matrix.go }}-tools" --out-link supported-tools
+          supported-tools/bin/go version
+      - name: Offline development and editor workflow
+        run: tests/interactive.sh supported-tools/bin
