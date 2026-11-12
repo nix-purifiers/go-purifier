@@ -167,7 +167,7 @@ live in the project's repository or in another one:
 - `all` is one derivation with every command in `bin/`, which `packages`
   link into, and `proxy` is the module proxy tree of the locked downloads.
 
-`nix/lib/build-go-project.nix` documents the arguments. `modRoot` is the
+`pkgs/build-go-project/default.nix` documents the arguments. `modRoot` is the
 lock root inside `src`, for a build whose `replace` directives point
 outside the lock root; `src` then has to contain those directories.
 `fetchers` replaces the fetchers of the shared library, such

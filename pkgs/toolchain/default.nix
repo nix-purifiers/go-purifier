@@ -38,16 +38,22 @@ let
   # The go-purifier Nix library, with the shared library linked in as
   # `purifier`, for the files the go wrapper evaluates with nix-build.
   nixLib = runCommand "go-purifier-nix-lib" { } ''
-    cp -r ${../../nix/lib} $out
-    chmod u+w $out
-    ln -s ${purifierSrc} $out/purifier
+    mkdir -p $out/lib-overlays $out/pkgs
+    cp -r ${../../lib-overlays/default} $out/lib-overlays/default
+    cp -r ${../build-go-project} $out/pkgs/build-go-project
+    cp -r ${../build-go-path-project} $out/pkgs/build-go-path-project
+    mkdir $out/pkgs/toolchain
+    cp ${./gopath-release.nix} $out/pkgs/toolchain/gopath-release.nix
+    cp ${./prefetch.nix} $out/pkgs/toolchain/prefetch.nix
+    cp ${./realize.nix} $out/pkgs/toolchain/realize.nix
+    cp ${./release.nix} $out/pkgs/toolchain/release.nix
+    ln -s ${purifierSrc} $out/pkgs/toolchain/purifier
   '';
   inputHelper = writeShellScript "go-purifier-inputs" ''
     export PYTHONPATH=${lib.escapeShellArg ("${purifierSrc}/tools")}
     exec ${python3}/bin/python3 ${../../tools/resolve_inputs.py}
   '';
-  sdkReference = writeText "go-sdk-reference.nix" (import ../../nix/lib/sdk-expression.nix go)
-  .expression;
+  sdkReference = writeText "go-sdk-reference.nix" (import ./sdk-expression.nix go).expression;
   wrapperArgs = lib.escapeShellArgs [
     "--set"
     "GO_PURIFIER_GO_NIX"
@@ -61,7 +67,7 @@ let
     "${go}/bin/go"
     "--set"
     "GO_PURIFIER_NIX_LIB"
-    "${nixLib}"
+    "${nixLib}/pkgs/toolchain"
     "--set-default"
     "GO_PURIFIER_NIXPKGS"
     "${path}"

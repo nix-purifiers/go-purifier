@@ -12,7 +12,7 @@ import (
 // SHA-256, in SRI form, of the lockfile without its contentHash field, in
 // the form Nix's builtins.toJSON gives the same value: no whitespace,
 // object keys in sorted order, and no escaping beyond what JSON requires.
-// nix/lib/lock.nix computes the same digest.
+// lib-overlays/default/lock.nix computes the same digest.
 func contentHash(data []byte) (string, error) {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()

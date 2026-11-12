@@ -24,7 +24,7 @@ import (
 // The lockfile sits at the lock root (root.go).
 const lockFileName = "go-purifier.lock.json"
 
-// The lock format version this binary writes and reads. nix/lib/lock-version.nix
+// The lock format version this binary writes and reads. lib-overlays/default/lock-version.nix
 // holds the same number.
 const lockFormatVersion = 1
 
@@ -76,7 +76,7 @@ type Binary struct {
 
 // Artifact is a checkout of a repository, as an entry of the shared library
 // of the nix-purifiers: exactly one of Git, Hg, Svn, Bzr and Fossil is set.
-// Path names it; nix/lib/lock.nix makes the file entries of the proxy
+// Path names it; lib-overlays/default/lock.nix makes the file entries of the proxy
 // files from Lock.Files, with a URL and empty mirrors.
 //
 // The mirrors of a file entry are empty. Two module proxies serve zips

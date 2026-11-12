@@ -20,7 +20,7 @@
   fetch,
 }:
 let
-  lock = import ./lock.nix { inherit lockFile; };
+  lock = import ../../lib-overlays/default/lock.nix { inherit lockFile; };
   vcsModule = import ./vcs-module.nix {
     inherit lock fetch;
     cli = lib.getExe cli;
