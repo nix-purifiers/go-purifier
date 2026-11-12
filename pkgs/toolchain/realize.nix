@@ -66,10 +66,12 @@ let
       ]
     )
   ) lock.vcsModules;
-  infos = import (libDir + "/../build-go-project/proxy-info.nix") { lib = import (nixpkgs + "/lib"); } (
-    map (entry: entry.path) lock.files
-    ++ map (m: "${lock.proxyDir m.module}/${m.version}.mod") lock.vcsModules
-  );
+  infos =
+    import (libDir + "/../build-go-project/proxy-info.nix") { lib = import (nixpkgs + "/lib"); }
+      (
+        map (entry: entry.path) lock.files
+        ++ map (m: "${lock.proxyDir m.module}/${m.version}.mod") lock.vcsModules
+      );
 in
 derivation {
   name = "go-purifier-proxy";
