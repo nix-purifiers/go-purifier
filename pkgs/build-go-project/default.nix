@@ -90,7 +90,7 @@ let
       srcFilter ? null,
     }:
     let
-      lock = import ./lock.nix { inherit lockFile; };
+      lock = import ../../lib-overlays/default/lock.nix { inherit lockFile; };
 
       # fetchEntry of the shared library, with the fetchers of the package
       # set, each of which `fetchers` can replace.
@@ -121,7 +121,7 @@ let
       # with its problems: a lockfile that is missing, damaged, of another
       # format version, or older than go.mod or go.sum.
       checkedLock = purifier.checkLock (
-        import ./read-lock.nix {
+        import ../../lib-overlays/default/read-lock.nix {
           inherit
             src
             modRoot

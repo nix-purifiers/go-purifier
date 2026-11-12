@@ -25,7 +25,7 @@
   purifierLib ? libDir + "/purifier",
 }:
 let
-  lock = import (libDir + "/lock.nix") { inherit lockFile; };
+  lock = import (libDir + "/../../lib-overlays/default/lock.nix") { inherit lockFile; };
   inherit ((import (purifierLib + "/default.nix") { lib = import (nixpkgs + "/lib"); })) fetchEntry;
   fetchFile = fetchEntry { };
   fetchCheckout = fetchEntry { pkgs = import nixpkgs { }; };
@@ -48,7 +48,7 @@ let
       if rest == null then "" else rest
     );
   system = builtins.currentSystem;
-  vcsModule = import (libDir + "/vcs-module.nix") {
+  vcsModule = import (libDir + "/../build-go-project/vcs-module.nix") {
     inherit lock fetch system;
     cli = cli';
   };
@@ -66,7 +66,7 @@ let
       ]
     )
   ) lock.vcsModules;
-  infos = import (libDir + "/proxy-info.nix") { lib = import (nixpkgs + "/lib"); } (
+  infos = import (libDir + "/../build-go-project/proxy-info.nix") { lib = import (nixpkgs + "/lib"); } (
     map (entry: entry.path) lock.files
     ++ map (m: "${lock.proxyDir m.module}/${m.version}.mod") lock.vcsModules
   );

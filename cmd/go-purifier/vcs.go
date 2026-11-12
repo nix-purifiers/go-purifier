@@ -30,7 +30,7 @@ import (
 // go.sum then verifies both.
 
 // VCSModule is a module version the lock run fetched from version control.
-// nix/lib/lock.nix derives its proxy directory from Module.
+// lib-overlays/default/lock.nix derives its proxy directory from Module.
 type VCSModule struct {
 	Module  string `json:"module"`
 	Version string `json:"version"`

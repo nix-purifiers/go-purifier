@@ -27,7 +27,7 @@ let
     inherit rev;
   };
   inRepo = pkgs.lib.removePrefix (repo + "/") lockFile;
-  buildGoProject = pkgs.callPackage ./build-go-project.nix {
+  buildGoProject = pkgs.callPackage ../build-go-project/default.nix {
     purifier = import (purifierLib + "/default.nix") { inherit (pkgs) lib; };
   };
 in

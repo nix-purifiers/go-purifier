@@ -17,7 +17,7 @@ let
   };
   src = if rootRel == "" then checkout else checkout + "/${rootRel}";
   inRepo = pkgs.lib.removePrefix (repo + "/") lockFile;
-  builder = pkgs.callPackage ./build-go-path-project.nix {
+  builder = pkgs.callPackage ../build-go-path-project/default.nix {
     go = import (/. + goReference);
     purifier = import (purifierLib + "/default.nix") { inherit (pkgs) lib; };
   };

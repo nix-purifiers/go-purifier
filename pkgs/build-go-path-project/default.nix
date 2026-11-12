@@ -21,7 +21,7 @@
   srcFilter ? null,
 }:
 let
-  lock = import ./lock.nix { inherit lockFile; };
+  lock = import ../../lib-overlays/default/lock.nix { inherit lockFile; };
   layout =
     lock.gopath
       or (throw "go-purifier: this builder needs a GOPATH lock; run go-purifier lock --gopath");

@@ -76,7 +76,7 @@ let
       touch $out
     '';
 
-  # Evaluates a lockfile check of nix/lib/lock.nix on a copy of a fixture,
+  # Evaluates a lockfile check of lib-overlays/default/lock.nix on a copy of a fixture,
   # and expects an error that contains `text`. lock.nix needs no nixpkgs,
   # so the evaluation runs in the sandbox, on copies outside the store.
   rejects =
@@ -89,7 +89,7 @@ let
       ''
         export HOME="$TMPDIR/home" NIX_STATE_DIR="$TMPDIR/state" NIX_LOG_DIR="$TMPDIR/log" NIX_CONF_DIR="$TMPDIR/conf"
         mkdir -p "$HOME" "$NIX_CONF_DIR"
-        cp -r ${../nix/lib} "$TMPDIR/lib"
+        cp -r ${../lib-overlays/default} "$TMPDIR/lib"
         cp -r ${fixture} "$TMPDIR/fixture"
         chmod -R u+w "$TMPDIR/lib" "$TMPDIR/fixture"
         if nix-instantiate --eval --strict --store dummy:// --expr "
@@ -110,7 +110,7 @@ in
   native-projections = import ./go-ffi.nix { inherit pkgs build; };
   proxy-version-metadata =
     let
-      infos = import ../nix/lib/proxy-info.nix { inherit lib; } [
+      infos = import ../pkgs/build-go-project/proxy-info.nix { inherit lib; } [
         "example.com/lib/@v/v1.0.0.mod"
         "example.com/lib/@v/v1.2.0-!r!c1.mod"
         "example.com/lib/@v/v1.0.0.zip"

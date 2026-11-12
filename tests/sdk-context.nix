@@ -11,7 +11,7 @@ let
   restore =
     value:
     let
-      expression = (import ../nix/lib/sdk-expression.nix value).expression;
+      expression = (import ../pkgs/toolchain/sdk-expression.nix value).expression;
     in
     import (
       builtins.toFile "sdk-context-expression.nix" (builtins.unsafeDiscardStringContext expression)

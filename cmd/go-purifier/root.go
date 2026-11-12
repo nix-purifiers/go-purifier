@@ -140,7 +140,7 @@ func findUp(dir, name string) (string, bool) {
 // definitionHash is a digest, in SRI form, of the files that define a
 // build's dependencies, given relative to the lock root. It is the SHA-256
 // of a line per file, in sorted order: the file's path, a space, and the
-// file's SHA-256 in hex, or "absent" for a missing file. nix/lib/lock.nix
+// file's SHA-256 in hex, or "absent" for a missing file. lib-overlays/default/lock.nix
 // computes the same digest with builtins.hashFile.
 func definitionHash(root string, files []string, overrides map[string]string) (string, error) {
 	sorted := append([]string(nil), files...)

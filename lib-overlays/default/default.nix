@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 #
-# The `go-purifier` library namespace: readLock (nix/lib/read-lock.nix),
+# The `go-purifier` library namespace: readLock (lib-overlays/default/read-lock.nix),
 # which reads the lockfiles into the lock in memory of the purifier
 # contract, and the source of the shared library of the nix-purifiers,
 # sharedLibrarySource, which the toolchain links into the go-purifier Nix
@@ -10,7 +10,7 @@
 
   overlay = final: prev: {
     go-purifier = (prev.go-purifier or { }) // {
-      readLock = import ../../nix/lib/read-lock.nix;
+      readLock = import ./read-lock.nix;
       sharedLibrarySource = "${closure-inputs.purifier}";
     };
   };
